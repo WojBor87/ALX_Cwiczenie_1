@@ -144,6 +144,20 @@ class Magazyn:
             print(produkt)
             print("-"*40)
 
+    def wyswietl_produkty_z_kategorii(self, kategoria_id: int) -> None:
+
+        kategoria = self.pobierz_kategorie(kategoria_id)
+        znaleziono = False
+
+        for produkt in self.produkty.values():
+            if produkt.kategoria == kategoria:
+                print(produkt)
+                print("-" * 40)
+                znaleziono = True
+
+        if not znaleziono:
+            print("Brak produktów w tej kategorii.")
+
     # Kategorie
     def dodaj_kategorie(self, kategoria: Kategoria) -> None:
         if kategoria.kategoria_id in self.kategorie:

@@ -1,9 +1,10 @@
-from models import Sklep, Kategoria, Produkt
+from models import Sklep, Kategoria, Produkt, Klient
 
 def create_test_shop():
 
+    nazwa_sklepu = input("Podaj nazwę nowego sklepu: ")
     sklep = Sklep(
-        nazwa="Python Shop",
+        nazwa=nazwa_sklepu,
         stan_konta=0
     )
 
