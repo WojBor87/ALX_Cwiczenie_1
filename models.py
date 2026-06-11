@@ -326,6 +326,7 @@ class Zamowienie:
 
         return self.wartosc_zamowienia
 
+
 class Sklep:
     def __init__(self, nazwa:str, stan_konta:float):
         self.nazwa = nazwa
