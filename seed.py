@@ -1,9 +1,13 @@
-from models import Kategoria, Produkt, Magazyn, Konto
+from models import Sklep, Kategoria, Produkt
 
+def create_test_shop():
 
-def create_test_warehouse():
+    sklep = Sklep(
+        nazwa="Python Shop",
+        stan_konta=0
+    )
 
-    magazyn = Magazyn("Magazyn główny")
+    magazyn = sklep.magazyn
 
     # Kategorie
     nabial = Kategoria("Nabiał")
@@ -38,4 +42,7 @@ def create_test_warehouse():
     for produkt in produkty:
         magazyn.dodaj_produkt(produkt)
 
-    return magazyn
+    return sklep
+
+def create_test_client():
+    return Klient("Jan Kowalski")

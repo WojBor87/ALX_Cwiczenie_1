@@ -326,14 +326,6 @@ class Zamowienie:
 
         return self.wartosc_zamowienia
 
-class Platnosc:
-    def __init__(self, kwota: float):
-        self.kwota = kwota
-
-    def wykonaj(self, sklep: Sklep):
-        sklep.stan_konta += self.kwota
-
-
 class Sklep:
     def __init__(self, nazwa:str, stan_konta:float):
         self.nazwa = nazwa
@@ -353,3 +345,29 @@ class Sklep:
             raise ValueError("Stan konta nie może być ujemny")
 
         self._stan_konta = float(value)
+
+    def realizuj_zamowienie(self, klient: Klient):
+        zamowienie = Zamowienie(klient)
+        kwota = zamowienie.zamow()
+        platnosc = Platnosc(kwota)
+        platnosc.wykonaj(self)
+
+        return kwota
+
+    def __str__(self):
+        return (
+            f"Sklep: {self.nazwa}\n"
+            f"Stan konta: {self.stan_konta:.2f} zł\n"
+            f"Liczba produktów: {len(self.magazyn.produkty)}"
+        )
+
+    def __repr__(self):
+        return f"Sklep(nazwa='{self.nazwa}')"
+
+
+class Platnosc:
+    def __init__(self, kwota: float):
+        self.kwota = kwota
+
+    def wykonaj(self, sklep: Sklep):
+        sklep.stan_konta += self.kwota
