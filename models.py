@@ -281,18 +281,57 @@ class Koszyk:
         return f"Koszyk(pozycje={len(self.pozycje)})"
 
 
-class Zamowienie:
-    pass
-
-
-class Platnosc:
-    pass
-
-
 class Klient:
     def __init__(self, imie:str):
         self.imie = imie
         self.koszyk = Koszyk()
+
+    def __str__(self):
+        return f"Klient: {self.imie}"
+
+    def __repr__(self):
+        return f"Klient(imie='{self.imie}')"
+
+
+class Zamowienie:
+    def __init__(self, klient: Klient):
+        self.klient = klient
+        self.wartosc_zamowienia = self.wartosc
+
+    @property
+    def wartosc(self):
+        return self.klient.koszyk.wartosc_koszyka()
+
+    def zamow(self) -> float:
+        if self.klient.koszyk.pusty:
+            raise ValueError("Koszyk jest pusty")
+
+        # Jeżeli w między czasie inny klient kupił produkty z koszyka, musimy mieć drugą walidacje
+        # ilości sztuk dostępnychw magazynie
+
+        for pozycja in self.klient.koszyk.pozycje.values():
+            produkt = pozycja["produkt"]
+            ilosc = pozycja["ilosc"]
+
+            if ilosc > produkt.stan_magazynowy:
+                raise ValueError(f"Produkt {produkt.nazwa} jest już niedostępny w wymaganej ilosci")
+
+        for pozycja in self.klient.koszyk.pozycje.values():
+            produkt = pozycja["produkt"]
+            ilosc = pozycja["ilosc"]
+
+            produkt.sprzedaz(ilosc)
+
+        self.klient.koszyk.pozycje.clear()
+
+        return self.wartosc_zamowienia
+
+class Platnosc:
+    def __init__(self, kwota: float):
+        self.kwota = kwota
+
+    def wykonaj(self, sklep: Sklep):
+        sklep.stan_konta += self.kwota
 
 
 class Sklep:
