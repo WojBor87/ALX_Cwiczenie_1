@@ -1,5 +1,4 @@
 # Modele pod obsługę sklepu
-from seed import create_test_warehouse
 
 class Kategoria:
     next_id = 0
@@ -203,17 +202,25 @@ class Koszyk:
         self.pozycje = {}
 
     def dodaj(self, produkt:Produkt, liczba_szt:int) -> None:
-        if liczba_szt < 0:
-            raise ValueError("Nie można dodać ujemnej liczby sztuk")
+        if liczba_szt <= 0:
+            raise ValueError("Nie można dodać niedodatniej liczby sztuk")
         if liczba_szt > produkt.stan_magazynowy:
             raise ValueError(f"Brak wystarczającej liczby sztuk w magazynie. Dostępna liczba: {produkt.stan_magazynowy}")
+
+        aktualnie_w_koszyku = 0
+
+        if produkt.produkt_id in self.pozycje:
+            aktualnie_w_koszyku = self.pozycje[produkt.produkt_id]["ilosc"]
+
+        if aktualnie_w_koszyku + liczba_szt > produkt.stan_magazynowy:
+            raise ValueError("Sumarycznie dodana liczba sztuk przekracza stan_magazynowy")
 
         if produkt.produkt_id in self.pozycje:
             self.pozycje[produkt.produkt_id]["ilosc"] += liczba_szt
         else:
             self.pozycje[produkt.produkt_id] = {
                 "produkt": produkt,
-                "Ilość": liczba_szt,
+                "ilosc": liczba_szt,
             }
 
     def usun(self, produkt_id: int, liczba_szt:int | None=None) -> None:
@@ -229,12 +236,49 @@ class Koszyk:
         if liczba_szt <= 0:
             raise ValueError("Liczba sztuk musi być dodatnia")
 
-        avaliable = self.pozycje[produkt_id]["ilosc"]
+        aktualna_ilosc = self.pozycje[produkt_id]["ilosc"]
 
-        if liczba_szt >= avaliable:
+        if liczba_szt >= aktualna_ilosc:
             del self.pozycje[produkt_id]
         else:
             self.pozycje[produkt_id]["ilosc"] -= liczba_szt
+
+    def wartosc_koszyka(self) -> float:
+        suma = 0
+        for pozycja in self.pozycje.values():
+            produkt = pozycja["produkt"]
+            ilosc = pozycja["ilosc"]
+            suma += produkt.cena * ilosc
+        return suma
+
+    @property
+    def pusty(self) -> bool:
+        return len(self.pozycje) == 0
+
+    def wyswietl(self):
+        if self.pusty:
+            print("Koszyk jest pusty.")
+            return
+
+        print("\nZawartość koszyka:")
+        for pozycja in self.pozycje.values():
+            produkt = pozycja["produkt"]
+            ilosc = pozycja["ilosc"]
+            print(f"{produkt.nazwa} x {ilosc} = {produkt.cena * ilosc:.2f} zł")
+
+        print(f"Razem: {self.wartosc_koszyka():.2f} zł")
+
+    def __str__(self):
+        if self.pusty:
+            return "Koszyk jest pusty"
+
+        return (
+            f"Liczba produktów: {len(self.pozycje)}\n"
+            f"Wartość koszyka: {self.wartosc_koszyka():.2f} zł"
+        )
+
+    def __repr__(self):
+        return f"Koszyk(pozycje={len(self.pozycje)})"
 
 
 class Zamowienie:
