@@ -1,24 +1,32 @@
 # Modele pod obsługę sklepu
+from seed import create_test_warehouse
 
 class Kategoria:
-    def __init__(self, kategoria_id:int, nazwa:str):
-        self.kategoria_id = kategoria_id
+    next_id = 0
+
+    def __init__(self,nazwa:str):
         self.nazwa = nazwa
+        self.kategoria_id = Kategoria.next_id
+        Kategoria.next_id += 1
 
     def __str__(self):
         return f"{self.kategoria_id}: {self.nazwa}"
 
 
 class Produkt:
-    def __init__(self, produkt_id:int, nazwa:str, cena:float, stan_magazynowy:int, kategoria:Kategoria | None = None):
+    next_id = 0
+
+    def __init__(self, nazwa:str, cena:float, stan_magazynowy:int, kategoria:Kategoria | None = None):
         if kategoria is not None and not isinstance(kategoria, Kategoria):
             raise TypeError("Kategoria musi być obiektem klasy Kategoria")
 
-        self.produkt_id = produkt_id
+        self.produkt_id = Produkt.next_id
         self.nazwa = nazwa
         self.cena = cena
         self.stan_magazynowy = stan_magazynowy
         self.kategoria = kategoria
+
+        Produkt.next_id += 1
 
     # Walidacja wartości
     @property
@@ -98,16 +106,16 @@ class Magazyn:
         self.produkty = {}
         self.kategorie = {}
 
-        # Domyślna kategoria na produkty
-        self.kategorie[0] = Kategoria(
-            kategoria_id=0,
-            nazwa="Uncategorised"
-        )
+        self.domyslna_kategoria = Kategoria("Uncategorised")
+
+        self.kategorie[
+            self.domyslna_kategoria.kategoria_id
+        ] = self.domyslna_kategoria
 
     # Produkty
-    def dodaj_produkt(self, produkt: Produkt):
+    def dodaj_produkt(self, produkt: Produkt) -> None:
         if produkt.kategoria is None:
-            produkt.kategoria = self.kategorie[0]
+            produkt.kategoria = self.domyslna_kategoria
 
         if produkt.produkt_id in self.produkty:
             istniejacy = self.produkty[produkt.produkt_id]
@@ -122,43 +130,44 @@ class Magazyn:
         else:
             raise KeyError(f"W magazynie brak produktu o numerze ID: {produkt_id}")
 
-    def pobierz_produkt(self, produkt_id: int):
+    def pobierz_produkt(self, produkt_id: int) -> Produkt:
         if produkt_id not in self.produkty:
             raise KeyError("Brak produktu w magazynie")
-        else:
-            return self.produkty[produkt_id]
+        return self.produkty[produkt_id]
 
     def wyswietl_produkty(self):
+        if not self.produkty:
+            print("Brak produktów")
+            return
+
         for produkt in self.produkty.values():
             print(f"Produkt ID: {produkt.produkt_id}")
             print(produkt)
             print("-"*40)
 
     # Kategorie
-    def dodaj_kategorie(self, kategoria: Kategoria):
+    def dodaj_kategorie(self, kategoria: Kategoria) -> None:
         if kategoria.kategoria_id in self.kategorie:
-            pass
-        else:
-            self.kategorie[kategoria.kategoria_id] = kategoria
+            raise ValueError("Kategoria już istnieje")
+        self.kategorie[kategoria.kategoria_id] = kategoria
 
     def usun_kategorie(self, kategoria_id: int):
-        if kategoria_id == 0:
+        if kategoria_id == self.domyslna_kategoria.kategoria_id:
             raise ValueError("Nie można usunąć kategorii domyślnej")
 
         if kategoria_id in self.kategorie:
             for produkt in self.produkty.values():
                 if produkt.kategoria == self.kategorie[kategoria_id]:
-                    produkt.kategoria = self.kategorie[0]
+                    produkt.kategoria = self.domyslna_kategoria
 
             del self.kategorie[kategoria_id]
         else:
             raise KeyError(f"W magazynie brak kategorii o numerze ID: {kategoria_id}")
 
-    def pobierz_kategorie(self, kategoria_id: int):
+    def pobierz_kategorie(self, kategoria_id: int) -> Kategoria:
         if kategoria_id not in self.kategorie:
             raise KeyError("Brak kategorii w magazynie")
-        else:
-            return self.kategorie[kategoria_id]
+        return self.kategorie[kategoria_id]
 
     def wyswietl_kategorie(self):
         for kategoria in self.kategorie.values():
@@ -167,6 +176,10 @@ class Magazyn:
 
     # Magazyn
     def wyswietl_stan(self):
+        if not self.produkty:
+            print("Magazyn jest pusty")
+            return
+
         for produkt in self.produkty.values():
             print(f"{produkt.nazwa}: {produkt.stan_magazynowy}")
 
@@ -189,6 +202,40 @@ class Koszyk:
     def __init__(self):
         self.pozycje = {}
 
+    def dodaj(self, produkt:Produkt, liczba_szt:int) -> None:
+        if liczba_szt < 0:
+            raise ValueError("Nie można dodać ujemnej liczby sztuk")
+        if liczba_szt > produkt.stan_magazynowy:
+            raise ValueError(f"Brak wystarczającej liczby sztuk w magazynie. Dostępna liczba: {produkt.stan_magazynowy}")
+
+        if produkt.produkt_id in self.pozycje:
+            self.pozycje[produkt.produkt_id]["ilosc"] += liczba_szt
+        else:
+            self.pozycje[produkt.produkt_id] = {
+                "produkt": produkt,
+                "Ilość": liczba_szt,
+            }
+
+    def usun(self, produkt_id: int, liczba_szt:int | None=None) -> None:
+        if produkt_id not in self.pozycje:
+            raise KeyError("Nie ma takiego produktu w koszyku")
+        if liczba_szt is None:
+            del self.pozycje[produkt_id]
+            return
+
+        if not isinstance(liczba_szt, int):
+            raise TypeError("Liczba sztuk musi być liczbą całkowitą")
+
+        if liczba_szt <= 0:
+            raise ValueError("Liczba sztuk musi być dodatnia")
+
+        avaliable = self.pozycje[produkt_id]["ilosc"]
+
+        if liczba_szt >= avaliable:
+            del self.pozycje[produkt_id]
+        else:
+            self.pozycje[produkt_id]["ilosc"] -= liczba_szt
+
 
 class Zamowienie:
     pass
@@ -198,13 +245,28 @@ class Platnosc:
     pass
 
 
-class Konto:
-    pass
-
-
 class Klient:
-    pass
+    def __init__(self, imie:str):
+        self.imie = imie
+        self.koszyk = Koszyk()
 
 
 class Sklep:
-    pass
+    def __init__(self, nazwa:str, stan_konta:float):
+        self.nazwa = nazwa
+        self.magazyn = Magazyn(nazwa)
+        self.stan_konta = stan_konta
+
+    @property
+    def stan_konta(self) -> float:
+        return self._stan_konta
+
+    @stan_konta.setter
+    def stan_konta(self, value: float):
+        if not isinstance(value, (int, float)):
+            raise TypeError("Stan konta musi być liczbą")
+
+        if value < 0:
+            raise ValueError("Stan konta nie może być ujemny")
+
+        self._stan_konta = float(value)
